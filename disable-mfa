@@ -1,0 +1,53 @@
+#!/usr/bin/python
+"""
+disable-mfa - CLI tool to easily deactivate MFA enabled IAM users
+
+Usage:
+  disable-mfa <user>
+  disable-mfa [ -h | --help | --version ]
+
+Options:
+  --version             Show version.
+  -h --help             Show this screen.
+"""
+from boto3 import resource, client
+from docopt import docopt, DocoptExit
+
+# about section
+__author__ = "Andrew Kuttor"
+__credits__ = "Andrew Kuttor"
+__maintainer__ = "Andrew Kuttor"
+__version__ = "1.0.0"
+
+
+def main():
+    try:
+        doc_args = docopt(__doc__, version='mfa_disabler 1.0')
+        deactivate_mfa_device(
+            user=doc_args['<user>'],
+            serial=list_mfa_serial_number(doc_args['<user>']))
+
+    except DocoptExit as e:
+        print e.message
+
+
+def deactivate_mfa_device(user, serial):
+    resource('iam').deactivate_mfa_device(
+        UserName=user,
+        SerialNumber=serial
+    )
+
+
+def list_mfa_serial_number(user):
+    mfa_device = client('iam').list_mfa_devices(
+        UserName=user,
+        MaxItems=1
+    )
+
+    if not mfa_device['MFADevices']:
+        raise RuntimeError('MFA not activated for ', UserName)
+
+    return mfa_device['MFADevices'][0]['SerialNumber']
+
+if __name__ == "__main__":
+    exit(main())
